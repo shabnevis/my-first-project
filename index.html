@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>سازنده‌ی کانفیگ میکروتیک</title>
+  <meta name="description" content="ساخت اسکریپت RouterOS متناسب با مدل و نسخه‌ی دقیق روتر میکروتیک">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <h1>سازنده‌ی کانفیگ میکروتیک</h1>
+      <p class="sub">مدل و نسخه را انتخاب کنید، فرم را پر کنید و اسکریپت آماده‌ی RouterOS بگیرید. اسکریپت اول کار، نسخه و پورت‌های روتر را بررسی می‌کند و روی دستگاه اشتباه اجرا نمی‌شود.</p>
+    </div>
+  </header>
+
+  <main class="wrap layout">
+    <form id="form" class="form" autocomplete="off" onsubmit="return false">
+
+      <section class="card">
+        <h2><span class="num">۱</span> دستگاه و نسخه</h2>
+        <div class="grid">
+          <label>مدل دستگاه
+            <select id="model"></select>
+          </label>
+          <label>نسخه‌ی RouterOS
+            <select id="version" dir="ltr"></select>
+            <small>اگر نسخه‌ی روتر شما جدیدتر از آخرین گزینه است، آخرین گزینه را انتخاب کنید.</small>
+          </label>
+          <label id="portCountBox" hidden>تعداد کارت شبکه (ether)
+            <input id="portCount" type="number" min="1" max="32" value="2" dir="ltr">
+          </label>
+          <label id="wifiDriverBox" hidden>درایور وایرلس
+            <select id="wifiDriver">
+              <option value="wireless">wireless (پیش‌فرض، نصب‌شده روی دستگاه)</option>
+              <option value="wifi-qcom-ac">wifi-qcom-ac (درایور جدید، نیاز به نصب پکیج)</option>
+            </select>
+          </label>
+        </div>
+        <div id="deviceInfo" class="info"></div>
+      </section>
+
+      <section class="card">
+        <h2><span class="num">۲</span> سیستم</h2>
+        <div class="grid">
+          <label>نام روتر (Identity)
+            <input id="identity" value="MikroTik" dir="ltr">
+          </label>
+          <label>منطقه‌ی زمانی
+            <select id="timezone" dir="ltr"></select>
+          </label>
+          <label>سرور NTP (ساعت)
+            <input id="ntp" value="pool.ntp.org" dir="ltr">
+            <small>خالی بگذارید تا تنظیم نشود.</small>
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2><span class="num">۳</span> اینترنت (WAN)</h2>
+        <div class="grid">
+          <label>پورت WAN
+            <select id="wanPort" dir="ltr"></select>
+          </label>
+          <label>نوع اتصال
+            <select id="wanType">
+              <option value="dhcp">DHCP (مودم یا سرور، IP خودکار)</option>
+              <option value="pppoe">PPPoE (نام کاربری و رمز از ISP)</option>
+              <option value="static">IP ثابت (Static)</option>
+            </select>
+          </label>
+          <label>VLAN ID (اختیاری)
+            <input id="wanVlan" placeholder="مثلاً 35 — اگر ISP نخواسته خالی بگذارید" dir="ltr">
+          </label>
+        </div>
+        <div class="grid" data-show="wanType=static">
+          <label>آدرس IP و ماسک
+            <input id="wanAddress" placeholder="203.0.113.10/29" dir="ltr">
+          </label>
+          <label>Gateway
+            <input id="wanGateway" placeholder="203.0.113.9" dir="ltr">
+          </label>
+        </div>
+        <div class="grid" data-show="wanType=pppoe">
+          <label>نام کاربری PPPoE
+            <input id="pppoeUser" dir="ltr">
+          </label>
+          <label>رمز PPPoE
+            <input id="pppoePass" type="password" dir="ltr">
+          </label>
+        </div>
+        <div class="grid">
+          <label>سرورهای DNS
+            <input id="dnsServers" value="1.1.1.1,8.8.8.8" dir="ltr">
+            <small>با کاما جدا کنید.</small>
+          </label>
+          <label class="check" data-hide="wanType=static">
+            <input id="usePeerDns" type="checkbox"> DNS را از ISP هم بگیر
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2><span class="num">۴</span> شبکه‌ی داخلی (LAN)</h2>
+        <label class="check"><input id="lanEnabled" type="checkbox" checked> شبکه‌ی داخلی (Bridge) ساخته شود</label>
+        <div data-show="lanEnabled">
+          <div class="field">
+            <span class="label">پورت‌های LAN</span>
+            <div id="lanPorts" class="ports" dir="ltr"></div>
+          </div>
+          <div class="grid">
+            <label>آدرس روتر در LAN
+              <input id="lanAddress" value="192.168.88.1/24" dir="ltr">
+            </label>
+          </div>
+          <label class="check"><input id="dhcp" type="checkbox" checked> سرور DHCP روشن باشد</label>
+          <div class="grid" data-show="dhcp">
+            <label>شروع رنج DHCP
+              <input id="poolStart" value="192.168.88.10" dir="ltr">
+            </label>
+            <label>پایان رنج DHCP
+              <input id="poolEnd" value="192.168.88.254" dir="ltr">
+            </label>
+            <label>مدت Lease
+              <input id="lease" value="1d" dir="ltr">
+              <small>مثل 1d یا 12h یا 30m</small>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="wifiCard">
+        <h2><span class="num">۵</span> وای‌فای</h2>
+        <label class="check"><input id="wifiEnabled" type="checkbox" checked> وای‌فای روشن شود</label>
+        <div class="grid" data-show="wifiEnabled">
+          <label>نام وای‌فای (SSID)
+            <input id="ssid" value="MikroTik-WiFi" dir="ltr">
+          </label>
+          <label>رمز وای‌فای
+            <input id="wifiPass" type="password" dir="ltr">
+            <small>۸ تا ۶۳ کاراکتر</small>
+          </label>
+          <label class="check" id="wpa3Box"><input id="wpa3" type="checkbox" checked> WPA3 هم فعال باشد (WPA2/WPA3)</label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2><span class="num">۶</span> امنیت و دسترسی</h2>
+        <div class="grid">
+          <label>رمز جدید کاربر admin
+            <input id="adminPassword" type="password" dir="ltr">
+          </label>
+          <label>کاربر مدیر جدید (اختیاری)
+            <input id="newUser" placeholder="مثلاً netadmin" dir="ltr">
+          </label>
+          <label data-show="newUser">رمز کاربر جدید
+            <input id="newUserPassword" type="password" dir="ltr">
+          </label>
+        </div>
+        <label class="check" data-show="newUser"><input id="disableAdmin" type="checkbox"> کاربر admin غیرفعال شود</label>
+        <div class="field">
+          <span class="label">سرویس‌های باز</span>
+          <div class="ports">
+            <label class="check"><input id="keepWinbox" type="checkbox" checked> Winbox</label>
+            <label class="check"><input id="keepSsh" type="checkbox" checked> SSH</label>
+            <label class="check"><input id="keepWebfig" type="checkbox"> WebFig (http)</label>
+            <label class="check"><input id="keepApi" type="checkbox"> API</label>
+          </div>
+          <small>Telnet و FTP همیشه بسته می‌شوند.</small>
+        </div>
+        <label class="check"><input id="wanMgmt" type="checkbox"> مدیریت از طریق اینترنت (WAN) مجاز باشد</label>
+        <div class="grid" data-show="wanMgmt">
+          <label>فقط از این IPها
+            <input id="wanMgmtSources" placeholder="مثلاً 5.6.7.8, 10.0.0.0/8" dir="ltr">
+            <small>خالی = از همه‌جا (توصیه نمی‌شود)</small>
+          </label>
+        </div>
+      </section>
+    </form>
+
+    <aside class="out">
+      <div class="card sticky">
+        <h2>اسکریپت</h2>
+        <div id="badges" class="badges"></div>
+        <ul id="errors" class="msgs err"></ul>
+        <ul id="warnings" class="msgs warn"></ul>
+        <div class="actions">
+          <button id="copyBtn" type="button">کپی</button>
+          <button id="downloadBtn" type="button" class="secondary">دانلود فایل ‎.rsc</button>
+        </div>
+        <pre id="script" dir="ltr"></pre>
+        <details class="howto" open>
+          <summary>روش اجرا (پیشنهادی)</summary>
+          <ol>
+            <li>از روتر <b>بکاپ</b> بگیرید.</li>
+            <li>با Winbox از طریق <b>MAC Address</b> وصل شوید (نه IP).</li>
+            <li>روتر را بدون کانفیگ پیش‌فرض ریست کنید:
+              <code dir="ltr">/system reset-configuration no-defaults=yes skip-backup=yes</code></li>
+              <li>بعد از بالا آمدن، دوباره با MAC وصل شوید و فایل ‎.rsc را به منوی <b>Files</b> بکشید.</li>
+            <li>در Terminal بزنید:
+              <code dir="ltr">/import file-name=mikrotik-config.rsc verbose=yes</code></li>
+          </ol>
+          <p>اگر نسخه یا مدل اشتباه باشد، اسکریپت در قدم اول با پیام <code dir="ltr">WRONG ROUTEROS VERSION</code> یا <code dir="ltr">INTERFACE NOT FOUND</code> متوقف می‌شود و چیزی تغییر نمی‌کند.</p>
+          <p>روی CHR ابری <b>ریست نکنید</b> (دسترسی‌تان قطع می‌شود)؛ «مدیریت از WAN» را روشن کنید و مستقیم import بزنید.</p>
+        </details>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="wrap foot">
+    قبل از استفاده روی روتر اصلی، اسکریپت را روی یک CHR یا دستگاه تست امتحان کنید.
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/generator.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
